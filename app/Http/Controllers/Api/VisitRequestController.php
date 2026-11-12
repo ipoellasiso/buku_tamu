@@ -158,7 +158,7 @@ class VisitRequestController extends Controller
         $this->notif->notify(
             $visitRequest->guestUser,
             'Kunjungan Selesai',
-            'Terima kasih telah berkunjung ke BPKAD Kota Palu.',
+            'Terima kasih telah berkunjung ke ' . app(\App\Services\Pengaturan::class)->nama_pendek . '.',
             'visit_completed',
             ['visit_request_id' => $visitRequest->id]
         );

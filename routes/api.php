@@ -54,3 +54,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/laporan/preview', [LaporanController::class, 'previewData']);
     });
 });
+
+Route::get('/pengaturan', [\App\Http\Controllers\Web\PengaturanController::class, 'publik']);
