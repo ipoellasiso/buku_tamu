@@ -1,58 +1,71 @@
 @php
     $kode = 'TL-' . str_pad($guest->id, 4, '0', STR_PAD_LEFT);
     $map = [
-        'pending'   => ['⏳', 'Menunggu resepsionis', 'Data Anda sudah terkirim. Silakan menuju resepsionis dan tunjukkan layar ini.', 'bg-orange-50 text-orange-700'],
-        'confirmed' => ['🏢', 'Silakan masuk',        'Anda sudah tercatat masuk. Selamat berkunjung!',                                   'bg-teal-50 text-teal-700'],
-        'completed' => ['🏁', 'Kunjungan selesai',    'Terima kasih telah berkunjung ke ' . $set->nama_pendek . '.',                                 'bg-green-50 text-green-700'],
+        'pending'   => ['pending',   'Menunggu resepsionis', 'Data Anda sudah terkirim. Silakan menuju resepsionis dan tunjukkan layar ini.', 'bg-amber/15 text-amber ring-amber/40', 'bg-amber'],
+        'confirmed' => ['confirmed', 'Silakan masuk',        'Anda sudah tercatat masuk. Selamat berkunjung!',                                   'bg-cyan-400/15 text-cyan-300 ring-cyan-300/40', 'bg-cyan-300'],
+        'completed' => ['completed', 'Kunjungan selesai',    'Terima kasih telah berkunjung ke ' . $set->nama_pendek . '.',                      'bg-emerald-400/15 text-emerald-300 ring-emerald-300/40', 'bg-emerald-300'],
     ];
-    [$ikon, $judul, $ket, $cls] = $map[$guest->status] ?? $map['pending'];
+    [$tipe, $judul, $ket, $cls, $dot] = $map[$guest->status] ?? $map['pending'];
 @endphp
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#1e2a78">
+
+@extends('web.layouts.public')
+@section('title', 'Status Tamu')
+
+@push('styles')
     @if($guest->status !== 'completed')
         <meta http-equiv="refresh" content="10">
     @endif
-    <title>Status Tamu — {{ $set->nama_pendek }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-gradient-to-b from-[#1e2a78] to-blue-700 flex items-center justify-center p-5 antialiased">
+@endpush
 
-<div class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 text-center">
-    <div class="w-20 h-20 mx-auto rounded-full grid place-items-center text-4xl {{ $cls }}">{{ $ikon }}</div>
-    <h1 class="text-xl font-bold text-slate-800 mt-4">{{ $judul }}</h1>
-    <p class="text-sm text-slate-500 mt-1">{{ $ket }}</p>
+@section('content')
+<main class="flex min-h-screen items-center justify-center px-5 py-10">
+    <div class="card w-full max-w-sm rounded-3xl p-6 text-center">
 
-    <div class="mt-5 rounded-2xl bg-slate-50 py-3">
-        <p class="text-[11px] uppercase tracking-wide text-slate-400">Kode Tamu</p>
-        <p class="text-3xl font-extrabold text-[#1e2a78] tracking-widest">{{ $kode }}</p>
-    </div>
-
-    <dl class="mt-5 text-sm text-left divide-y">
-        @foreach([
-            ['Nama',        $guest->name],
-            ['Instansi',    $guest->institution ?? '-'],
-            ['Keperluan',   $guest->purpose],
-            ['Yang Dituju', $guest->host ?? 'Ditentukan resepsionis'],
-            ['Dikirim',     $guest->created_at->format('d/m/Y H:i')],
-        ] as [$l, $v])
-        <div class="flex justify-between gap-4 py-2">
-            <dt class="text-slate-500 shrink-0">{{ $l }}</dt>
-            <dd class="font-medium text-right">{{ $v }}</dd>
+        <div class="relative mx-auto h-20 w-20">
+            @if($tipe === 'pending')
+                <span class="absolute inset-0 animate-ping rounded-full {{ $dot }} opacity-20"></span>
+            @endif
+            <div class="relative grid h-20 w-20 place-items-center rounded-full ring-2 {{ $cls }}">
+                @if($tipe === 'pending')
+                    <svg class="h-9 w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                @elseif($tipe === 'confirmed')
+                    <svg class="h-9 w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M2 21h20M8 8h4M8 12h4"/><path d="m16 15 2 2 4-4"/></svg>
+                @else
+                    <svg class="h-9 w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 3 3 5-6"/></svg>
+                @endif
+            </div>
         </div>
-        @endforeach
-    </dl>
 
-    @if($guest->status !== 'completed')
-        <p class="text-[11px] text-slate-400 mt-4">Halaman ini diperbarui otomatis.</p>
-    @endif
+        <h1 class="mt-5 font-display text-2xl font-extrabold">{{ $judul }}</h1>
+        <p class="mt-1 text-sm text-white/60">{{ $ket }}</p>
 
-    <a href="{{ route('walkin.create') }}" class="block mt-4 text-sm text-[#3f5bd9] font-medium">
-        Isi data tamu lain
-    </a>
-</div>
-</body>
-</html>
+        <div class="mt-6 rounded-2xl border border-dashed border-white/20 bg-white/5 py-4">
+            <p class="text-xs text-white/55">Kode tamu</p>
+            <p class="mt-1 font-display text-4xl font-extrabold tracking-widest text-amber">{{ $kode }}</p>
+        </div>
+
+        <dl class="mt-5 divide-y divide-white/10 text-left text-sm">
+            @foreach([
+                ['Nama',        $guest->name],
+                ['Instansi',    $guest->institution ?? '-'],
+                ['Keperluan',   $guest->purpose],
+                ['Yang dituju', $guest->host ?? 'Ditentukan resepsionis'],
+                ['Dikirim',     $guest->created_at->format('d/m/Y H:i')],
+            ] as [$l, $v])
+            <div class="flex justify-between gap-4 py-2.5">
+                <dt class="shrink-0 text-white/50">{{ $l }}</dt>
+                <dd class="text-right font-medium text-white">{{ $v }}</dd>
+            </div>
+            @endforeach
+        </dl>
+
+        @if($guest->status !== 'completed')
+            <p class="mt-4 text-xs text-white/40">Halaman ini diperbarui otomatis.</p>
+        @endif
+
+        <a href="{{ route('walkin.create') }}" class="mt-4 block text-sm font-semibold text-amber underline-offset-4 hover:underline">
+            Isi data tamu lain
+        </a>
+    </div>
+</main>
+@endsection
