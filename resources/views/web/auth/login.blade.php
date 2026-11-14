@@ -251,7 +251,7 @@
             <span class="font-display text-base font-semibold text-white/80">{{ $set->nama_pendek }}</span>
         </div>
 
-        <h1 class="font-display text-4xl font-extrabold tracking-tight">Selamat datang</h1>
+        <h1 class="font-display text-4xl font-extrabold tracking-tight">Selamat datangsadsada</h1>
         <p class="mt-2 text-white/60">Masuk ke {{ $set->nama_aplikasi }} dengan akun Anda.</p>
 
         @if($errors->any())
