@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
     <title>Masuk — {{ $set->nama_aplikasi }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,8 +18,9 @@
                         sans: ['"Plus Jakarta Sans"', 'sans-serif'],
                     },
                     colors: {
-                        navy: '#0A1F5C',
+                        ink: '#060B24',
                         brand: '#2F5BFF',
+                        violet: '#7C5CFF',
                         amber: '#FFC247',
                     },
                 },
@@ -26,30 +28,32 @@
         }
     </script>
     <style>
+        html, body { background: #060B24; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
 
-        /* Latar kiri: grid halus + cahaya */
-        .stage {
-            background:
-                radial-gradient(60% 50% at 20% 15%, rgba(47, 91, 255, .55), transparent 70%),
-                radial-gradient(50% 45% at 85% 90%, rgba(255, 194, 71, .22), transparent 70%),
-                #0A1F5C;
-        }
-        .stage::before {
-            content: "";
+        /* ===== Latar: aurora + grid ===== */
+        .aurora { position: fixed; inset: 0; overflow: hidden; z-index: 0; }
+        .blob { position: absolute; border-radius: 9999px; filter: blur(90px); opacity: .55; will-change: transform; }
+        .blob.b1 { width: 46vmax; height: 46vmax; left: -12vmax; top: -14vmax; background: #2F5BFF; animation: drift1 18s ease-in-out infinite alternate; }
+        .blob.b2 { width: 40vmax; height: 40vmax; right: -12vmax; bottom: -16vmax; background: #7C5CFF; animation: drift2 22s ease-in-out infinite alternate; }
+        .blob.b3 { width: 22vmax; height: 22vmax; left: 38%; top: 55%; background: #FFC247; opacity: .16; animation: drift3 26s ease-in-out infinite alternate; }
+        @keyframes drift1 { to { transform: translate(10vmax, 8vmax) scale(1.1); } }
+        @keyframes drift2 { to { transform: translate(-9vmax, -7vmax) scale(1.15); } }
+        @keyframes drift3 { to { transform: translate(-12vmax, -10vmax) scale(.8); } }
+        .grid-bg {
             position: absolute; inset: 0;
             background-image:
                 linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-            background-size: 44px 44px;
-            mask-image: radial-gradient(70% 70% at 50% 50%, #000, transparent);
-            -webkit-mask-image: radial-gradient(70% 70% at 50% 50%, #000, transparent);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(75% 75% at 50% 50%, #000 30%, transparent);
+            -webkit-mask-image: radial-gradient(75% 75% at 50% 50%, #000 30%, transparent);
         }
 
-        /* Lanyard + badge: jatuh dari atas lalu berayun pelan */
+        /* ===== Lanyard + badge ===== */
         .hang {
             transform-origin: 50% 0;
-            animation: drop .9s cubic-bezier(.2, .9, .3, 1.2) both, sway 6s ease-in-out .9s infinite;
+            animation: drop .95s cubic-bezier(.2, .9, .3, 1.2) both, sway 6s ease-in-out .95s infinite;
         }
         @keyframes drop {
             from { transform: translateY(-120%) rotate(-6deg); opacity: 0; }
@@ -59,181 +63,226 @@
             0%, 100% { transform: rotate(2.5deg); }
             50%      { transform: rotate(-2.5deg); }
         }
+        .tilt-wrap { perspective: 900px; }
+        .tilt { transition: transform .15s ease-out; transform-style: preserve-3d; }
 
-        /* Kilau tipis yang lewat di badge */
-        .badge { position: relative; overflow: hidden; }
-        .badge::after {
-            content: "";
-            position: absolute; top: -20%; bottom: -20%; left: -60%; width: 40%;
-            background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
-            transform: skewX(-18deg);
-            animation: shine 5s ease-in-out 1.4s infinite;
+        .badge {
+            position: relative; overflow: hidden;
+            background: linear-gradient(150deg, rgba(47,91,255,.95) 0%, rgba(124,92,255,.9) 100%);
+            border: 1px solid rgba(255,255,255,.28);
+            box-shadow: 0 30px 70px -15px rgba(47,91,255,.7), inset 0 1px 0 rgba(255,255,255,.35);
         }
-        @keyframes shine {
-            0%, 60% { left: -60%; }
-            100%    { left: 160%; }
-        }
-
-        /* Stempel HADIR saat submit */
-        .stamp {
-            opacity: 0;
-            transform: rotate(-14deg) scale(2.2);
+        /* kilau holografik mengikuti kursor */
+        .badge::before {
+            content: ""; position: absolute; inset: 0;
+            background: radial-gradient(260px circle at var(--mx, 30%) var(--my, 20%), rgba(255,255,255,.35), transparent 60%);
             pointer-events: none;
         }
-        .stamp.on {
-            animation: stamp .45s cubic-bezier(.3, 1.6, .5, 1) forwards;
+        .badge::after {
+            content: ""; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 40%;
+            background: linear-gradient(100deg, transparent, rgba(255,255,255,.4), transparent);
+            transform: skewX(-18deg);
+            animation: shine 5.5s ease-in-out 1.4s infinite;
+            pointer-events: none;
         }
+        @keyframes shine { 0%, 60% { left: -60%; } 100% { left: 160%; } }
+
+        .stamp { opacity: 0; transform: rotate(-14deg) scale(2.2); pointer-events: none; }
+        .stamp.on { animation: stamp .45s cubic-bezier(.3, 1.6, .5, 1) forwards; }
         @keyframes stamp {
             from { opacity: 0; transform: rotate(-14deg) scale(2.2); }
             to   { opacity: 1; transform: rotate(-14deg) scale(1); }
         }
-
-        /* Nama berganti halus */
         .name-swap { transition: opacity .15s ease; }
         .name-swap.out { opacity: 0; }
 
-        /* Form masuk */
-        .form-in { animation: formIn .7s ease .15s both; }
-        @keyframes formIn {
-            from { opacity: 0; transform: translateY(14px); }
-            to   { opacity: 1; transform: none; }
+        /* ===== Kartu form kaca ===== */
+        .card {
+            background: linear-gradient(160deg, rgba(255,255,255,.09), rgba(255,255,255,.03));
+            border: 1px solid rgba(255,255,255,.12);
+            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(24px);
+            box-shadow: 0 30px 80px -30px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.12);
+            transition: box-shadow .3s ease, border-color .3s ease;
+            animation: cardIn .8s ease .2s both;
         }
-
-        .field:focus-within label { color: #2F5BFF; }
-
-        .spinner {
-            width: 16px; height: 16px;
-            border: 2px solid rgba(255,255,255,.4);
-            border-top-color: #fff;
-            border-radius: 9999px;
-            animation: spin .7s linear infinite;
+        .card:focus-within {
+            border-color: rgba(111,140,255,.55);
+            box-shadow: 0 30px 90px -25px rgba(47,91,255,.65), inset 0 1px 0 rgba(255,255,255,.15);
         }
+        @keyframes cardIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+        .inp {
+            width: 100%;
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.14);
+            color: #fff;
+            border-radius: 14px;
+            padding: .85rem 1rem .85rem 2.9rem;
+            transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+        }
+        .inp::placeholder { color: rgba(255,255,255,.35); }
+        .inp:focus {
+            outline: none;
+            background: rgba(255,255,255,.09);
+            border-color: #6F8CFF;
+            box-shadow: 0 0 0 4px rgba(47,91,255,.25);
+        }
+        /* matikan warna kuning autofill browser */
+        .inp:-webkit-autofill,
+        .inp:-webkit-autofill:hover,
+        .inp:-webkit-autofill:focus {
+            -webkit-text-fill-color: #fff;
+            caret-color: #fff;
+            -webkit-box-shadow: 0 0 0 1000px #141d55 inset;
+            box-shadow: 0 0 0 1000px #141d55 inset;
+            border-color: rgba(255,255,255,.2);
+            transition: background-color 9999s ease-in-out 0s;
+        }
+        .ico { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,.4); transition: color .2s; pointer-events: none; }
+        .field:focus-within .ico { color: #FFC247; }
+        .field:focus-within label { color: #fff; }
+
+        /* ===== Tombol ===== */
+        .btn {
+            position: relative; overflow: hidden;
+            background: linear-gradient(100deg, #2F5BFF, #7C5CFF);
+            box-shadow: 0 14px 34px -10px rgba(79,91,255,.8);
+            transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+        }
+        .btn:hover { filter: brightness(1.12); box-shadow: 0 18px 40px -10px rgba(111,100,255,.9); }
+        .btn:active { transform: scale(.985); }
+        .btn::after {
+            content: ""; position: absolute; top: 0; bottom: 0; left: -50%; width: 35%;
+            background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
+            transform: skewX(-20deg);
+            transition: left .6s ease;
+        }
+        .btn:hover::after { left: 130%; }
+
+        .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 9999px; animation: spin .7s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         @media (prefers-reduced-motion: reduce) {
-            .hang, .badge::after, .form-in, .spinner { animation: none !important; }
+            .blob, .hang, .badge::after, .card, .spinner { animation: none !important; }
             .stamp.on { animation-duration: .01s; }
+            .tilt { transition: none; }
         }
     </style>
 </head>
-<body class="min-h-screen bg-white text-slate-800 antialiased">
+<body class="min-h-screen text-white antialiased">
 
-<div class="min-h-screen grid lg:grid-cols-[1.05fr_1fr]">
+<div class="aurora" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="grid-bg"></div>
+</div>
 
-    {{-- ============ KIRI: panggung badge tamu ============ --}}
-    <aside class="stage relative hidden lg:flex flex-col items-center justify-between overflow-hidden px-12 py-12 text-white">
-        <div class="relative z-10 flex items-center gap-3 self-start">
-            @if($set->logo_url)
-                <img src="{{ $set->logo_url }}" alt="Logo" class="h-10 w-10 rounded-lg bg-white/90 p-1 object-contain">
-            @endif
-            <span class="font-display text-lg font-semibold tracking-tight">{{ $set->nama_pendek }}</span>
-        </div>
+<div class="relative z-10 flex min-h-screen flex-col items-center justify-center gap-4 px-5 py-10 md:flex-row md:gap-16 lg:gap-28">
 
-        <div class="relative z-10 flex flex-col items-center">
-            {{-- tali lanyard --}}
-            <div class="hang flex flex-col items-center">
-                <div class="h-24 w-3 rounded-b bg-gradient-to-b from-amber to-amber/70 shadow"></div>
-                <div class="-mt-1 h-3 w-8 rounded-sm bg-slate-300 shadow-inner"></div>
+    {{-- ============ Badge tamu ============ --}}
+    <section class="flex flex-col items-center">
+        <div class="hang flex origin-top scale-[.82] flex-col items-center md:scale-100">
+            <div class="h-10 w-3 rounded-b bg-gradient-to-b from-amber to-amber/60 shadow md:h-24"></div>
+            <div class="-mt-1 h-3 w-8 rounded-sm bg-white/40"></div>
 
-                {{-- badge --}}
-                <div class="badge relative w-72 rounded-3xl bg-white p-6 text-slate-900 shadow-2xl shadow-black/40">
-                    <div class="mx-auto mb-5 h-2 w-16 rounded-full bg-slate-200"></div>
+            <div class="tilt-wrap">
+                <div id="tilt" class="tilt">
+                    <div id="badge" class="badge w-72 rounded-3xl p-6 text-white">
+                        <div class="mx-auto mb-5 h-2 w-16 rounded-full bg-white/30"></div>
 
-                    <div class="flex items-center gap-4">
-                        <div id="avatar" class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand font-display text-3xl font-extrabold text-white">T</div>
-                        <div class="min-w-0">
-                            <p class="text-xs font-medium text-slate-500">Tamu</p>
-                            <p id="guestName" class="name-swap font-display text-xl font-extrabold leading-tight break-words">Tamu Baru</p>
+                        <div class="flex items-center gap-4">
+                            <div id="avatar" class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-amber font-display text-3xl font-extrabold text-ink">T</div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-medium text-white/70">Tamu</p>
+                                <p id="guestName" class="name-swap break-words font-display text-xl font-extrabold leading-tight">Tamu Baru</p>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="mt-6 grid grid-cols-2 gap-3 text-sm">
-                        <div class="rounded-xl bg-slate-100 px-3 py-2">
-                            <p class="text-[11px] text-slate-500">Tanggal</p>
-                            <p id="guestDate" class="font-semibold">—</p>
+                        <div class="mt-6 grid grid-cols-2 gap-3 text-sm">
+                            <div class="rounded-xl bg-white/12 px-3 py-2 ring-1 ring-white/15">
+                                <p class="text-[11px] text-white/70">Tanggal</p>
+                                <p id="guestDate" class="font-semibold">—</p>
+                            </div>
+                            <div class="rounded-xl bg-white/12 px-3 py-2 ring-1 ring-white/15">
+                                <p class="text-[11px] text-white/70">Jam datang</p>
+                                <p id="guestTime" class="font-semibold tabular-nums">—</p>
+                            </div>
                         </div>
-                        <div class="rounded-xl bg-slate-100 px-3 py-2">
-                            <p class="text-[11px] text-slate-500">Jam datang</p>
-                            <p id="guestTime" class="font-semibold tabular-nums">—</p>
+
+                        <div class="mt-5 flex items-center justify-between border-t border-dashed border-white/30 pt-4">
+                            <p class="text-xs text-white/70">Menunggu masuk</p>
+                            <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-amber"></span>
                         </div>
-                    </div>
 
-                    <div class="mt-5 flex items-center justify-between border-t border-dashed border-slate-300 pt-4">
-                        <p class="text-xs text-slate-500">Menunggu masuk</p>
-                        <span class="h-2.5 w-2.5 rounded-full bg-amber"></span>
-                    </div>
-
-                    {{-- stempel --}}
-                    <div id="stamp" class="stamp absolute right-4 bottom-14 rounded-xl border-4 border-emerald-600 px-4 py-1 font-display text-3xl font-extrabold text-emerald-600 bg-white/70">
-                        HADIR
+                        <div id="stamp" class="stamp absolute bottom-14 right-4 rounded-xl border-4 border-amber bg-ink/70 px-4 py-1 font-display text-3xl font-extrabold text-amber">
+                            HADIR
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <p class="relative z-10 max-w-sm text-center text-sm text-blue-100/80">
+        <p class="mt-6 hidden max-w-xs text-center text-sm text-white/55 md:block">
             Setiap tamu tercatat. Masuk untuk melihat siapa saja yang sudah datang hari ini.
         </p>
-    </aside>
+    </section>
 
-    {{-- ============ KANAN: form ============ --}}
-    <main class="flex items-center justify-center px-6 py-12 sm:px-12">
-        <div class="form-in w-full max-w-sm">
+    {{-- ============ Form ============ --}}
+    <main class="card w-full max-w-md rounded-3xl p-7 sm:p-9">
+        <div class="mb-7 flex items-center gap-3">
+            @if($set->logo_url)
+                <img src="{{ $set->logo_url }}" alt="Logo" class="h-10 w-10 rounded-xl bg-white/10 object-contain p-1 ring-1 ring-white/15">
+            @endif
+            <span class="font-display text-base font-semibold text-white/80">{{ $set->nama_pendek }}</span>
+        </div>
 
-            {{-- header khusus mobile --}}
-            <div class="mb-8 lg:hidden">
-                @if($set->logo_url)
-                    <img src="{{ $set->logo_url }}" alt="Logo" class="mb-4 h-12 object-contain">
-                @endif
-                <p class="text-sm font-semibold text-brand">{{ $set->nama_pendek }}</p>
+        <h1 class="font-display text-4xl font-extrabold tracking-tight">Selamat datang</h1>
+        <p class="mt-2 text-white/60">Masuk ke {{ $set->nama_aplikasi }} dengan akun Anda.</p>
+
+        @if($errors->any())
+            <div role="alert" class="mt-6 flex items-start gap-3 rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+                <svg class="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0Zm-8-4a1 1 0 0 0-1 1v3a1 1 0 0 0 2 0V7a1 1 0 0 0-1-1Zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/></svg>
+                <span>{{ $errors->first() }}</span>
+            </div>
+        @endif
+
+        <form id="loginForm" action="{{ route('login.post') }}" method="POST" class="mt-8 space-y-5">
+            @csrf
+
+            <div class="field">
+                <label for="email" class="mb-1.5 block text-sm font-medium text-white/70 transition-colors">Email</label>
+                <div class="relative">
+                    <svg class="ico h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m3 8 9 6 9-6"/></svg>
+                    <input id="email" class="inp" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" placeholder="nama@email.com">
+                </div>
             </div>
 
-            <h1 class="font-display text-4xl font-extrabold tracking-tight text-navy">Selamat datang</h1>
-            <p class="mt-2 text-slate-500">Masuk ke {{ $set->nama_aplikasi }} dengan akun Anda.</p>
-
-            @if($errors->any())
-                <div role="alert" class="mt-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                    <svg class="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10A8 8 0 1 1 2 10a8 8 0 0 1 16 0Zm-8-4a1 1 0 0 0-1 1v3a1 1 0 0 0 2 0V7a1 1 0 0 0-1-1Zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/></svg>
-                    <span>{{ $errors->first() }}</span>
+            <div class="field">
+                <label for="password" class="mb-1.5 block text-sm font-medium text-white/70 transition-colors">Password</label>
+                <div class="relative">
+                    <svg class="ico h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                    <input id="password" class="inp pr-12" type="password" name="password" required autocomplete="current-password" placeholder="Masukkan password">
+                    <button type="button" id="togglePw" aria-label="Tampilkan password"
+                            class="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-white/45 transition hover:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-brand/30">
+                        <svg id="eyeOn" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg id="eyeOff" class="hidden h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.9 10.9 0 0 1 12 19c-6.5 0-10-7-10-7a18 18 0 0 1 4.1-5M9.9 5.2A9.7 9.7 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-2.2 3.2M1 1l22 22"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+                    </button>
                 </div>
-            @endif
+            </div>
 
-            <form id="loginForm" action="{{ route('login.post') }}" method="POST" class="mt-8 space-y-5">
-                @csrf
+            <button id="submitBtn" type="submit"
+                    class="btn flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-semibold text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-brand/40 disabled:cursor-not-allowed disabled:opacity-85">
+                <span id="btnLabel">Masuk</span>
+                <span id="btnSpin" class="spinner hidden"></span>
+            </button>
+        </form>
 
-                <div class="field">
-                    <label for="email" class="mb-1.5 block text-sm font-medium text-slate-700 transition-colors">Email</label>
-                    <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username"
-                           placeholder="nama@email.com"
-                           class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 transition focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/15">
-                </div>
-
-                <div class="field">
-                    <label for="password" class="mb-1.5 block text-sm font-medium text-slate-700 transition-colors">Password</label>
-                    <div class="relative">
-                        <input id="password" type="password" name="password" required autocomplete="current-password"
-                               placeholder="Masukkan password"
-                               class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-12 text-slate-900 placeholder-slate-400 transition focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/15">
-                        <button type="button" id="togglePw" aria-label="Tampilkan password"
-                                class="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-xl text-slate-400 transition hover:text-slate-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand/15">
-                            <svg id="eyeOn" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-                            <svg id="eyeOff" class="hidden h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.9 10.9 0 0 1 12 19c-6.5 0-10-7-10-7a18 18 0 0 1 4.1-5M9.9 5.2A9.7 9.7 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-2.2 3.2M1 1l22 22"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
-                        </button>
-                    </div>
-                </div>
-
-                <button id="submitBtn" type="submit"
-                        class="group flex w-full items-center justify-center gap-2 rounded-xl bg-navy px-4 py-3.5 font-semibold text-white shadow-lg shadow-navy/25 transition hover:bg-brand hover:shadow-brand/30 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand/30 active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-80">
-                    <span id="btnLabel">Masuk</span>
-                    <span id="btnSpin" class="spinner hidden"></span>
-                </button>
-            </form>
-
-            <p class="mt-8 text-center text-sm text-slate-500">
-                Belum punya akun?
-                <a href="{{ route('register') }}" class="font-semibold text-brand underline-offset-4 hover:underline">Daftar</a>
-            </p>
-        </div>
+        <p class="mt-7 text-center text-sm text-white/55">
+            Belum punya akun?
+            <a href="{{ route('register') }}" class="font-semibold text-amber underline-offset-4 hover:underline">Daftar</a>
+        </p>
     </main>
 </div>
 
@@ -248,6 +297,8 @@
         const btn = document.getElementById('submitBtn');
         const label = document.getElementById('btnLabel');
         const spin = document.getElementById('btnSpin');
+        const tilt = document.getElementById('tilt');
+        const badge = document.getElementById('badge');
 
         // Tanggal & jam di badge
         const dateEl = document.getElementById('guestDate');
@@ -281,6 +332,21 @@
         }
         email.addEventListener('input', updateName);
         updateName();
+
+        // Badge miring 3D mengikuti kursor + kilau holografik
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!reduce) {
+            window.addEventListener('pointermove', function (e) {
+                const r = badge.getBoundingClientRect();
+                const cx = r.left + r.width / 2;
+                const cy = r.top + r.height / 2;
+                const dx = Math.max(-1, Math.min(1, (e.clientX - cx) / (window.innerWidth / 2)));
+                const dy = Math.max(-1, Math.min(1, (e.clientY - cy) / (window.innerHeight / 2)));
+                tilt.style.transform = 'rotateY(' + (dx * 14) + 'deg) rotateX(' + (-dy * 10) + 'deg)';
+                badge.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
+                badge.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
+            });
+        }
 
         // Tampilkan / sembunyikan password
         const toggle = document.getElementById('togglePw');
