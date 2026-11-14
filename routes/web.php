@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Web\QrSitusController;
 use App\Http\Controllers\Web\WalkinController;
 use App\Http\Controllers\Web\PengaturanController;
+use App\Http\Controllers\Web\NotifikasiController;
 
 Route::get('/', fn () => redirect()->route('login'));
 
@@ -74,6 +75,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/pengaturan',  [PengaturanController::class, 'index'])->name('pengaturan.index');
         Route::post('/pengaturan', [PengaturanController::class, 'simpan'])->name('pengaturan.simpan');
+
+        Route::get('/notifikasi/tamu-baru', [NotifikasiController::class, 'tamuBaru'])->name('notif.tamu');
 
     });
 });

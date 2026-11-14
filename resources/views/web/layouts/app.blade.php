@@ -196,6 +196,10 @@
     </div>
 </div>
 
+@if($user->role === 'admin')
+    @include('web.partials.notif-tamu')
+@endif
+
 <script>
     function toggleMenu() {
         const s = document.getElementById('sidebar'), o = document.getElementById('overlay');
