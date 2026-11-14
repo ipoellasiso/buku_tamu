@@ -88,3 +88,11 @@ Route::get('/mulai', function () {
 Route::get('/tamu-langsung',  [WalkinController::class, 'create'])->name('walkin.create');
 Route::post('/tamu-langsung', [WalkinController::class, 'store'])->middleware('throttle:6,1')->name('walkin.store');
 Route::get('/tamu-langsung/status/{token}', [WalkinController::class, 'status'])->name('walkin.status');
+
+Route::get('/buat-link-storage', function () {
+    symlink(
+        base_path('storage/app/public'),
+        base_path('../public_html/bukutamu.absensiklik.my.id/storage')
+    );
+    return 'ok';
+});
