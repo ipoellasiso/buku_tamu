@@ -163,6 +163,14 @@
         .spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 9999px; animation: spin .7s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        .badge.pop { animation: pop 1.1s cubic-bezier(.3, 1.4, .5, 1); }
+        @keyframes pop {
+            0%   { transform: scale(1); box-shadow: 0 30px 70px -15px rgba(47,91,255,.7); }
+            30%  { transform: scale(1.06) rotate(-1.5deg); box-shadow: 0 0 0 6px rgba(255,194,71,.55), 0 30px 80px -10px rgba(255,194,71,.55); }
+            100% { transform: scale(1); box-shadow: 0 30px 70px -15px rgba(47,91,255,.7); }
+        }
+        @media (prefers-reduced-motion: reduce) { .badge.pop { animation: none; } }
+
         @media (prefers-reduced-motion: reduce) {
             .blob, .hang, .badge::after, .card, .spinner { animation: none !important; }
             .stamp.on { animation-duration: .01s; }
@@ -190,7 +198,12 @@
             <div class="tilt-wrap">
                 <div id="tilt" class="tilt">
                     <div id="badge" class="badge w-72 rounded-3xl p-6 text-white">
-                        <div class="mx-auto mb-5 h-2 w-16 rounded-full bg-white/30"></div>
+                        <div class="mx-auto mb-4 h-2 w-16 rounded-full bg-white/30"></div>
+
+                        <div id="feedPill" class="mb-3 hidden items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+                            <span class="h-2 w-2 animate-pulse rounded-full bg-amber"></span>
+                            <span id="feedPillText">Tamu terbaru</span>
+                        </div>
 
                         <div class="flex items-center gap-4">
                             <div id="avatar" class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-amber font-display text-3xl font-extrabold text-ink">T</div>
@@ -212,7 +225,7 @@
                         </div>
 
                         <div class="mt-5 flex items-center justify-between border-t border-dashed border-white/30 pt-4">
-                            <p class="text-xs text-white/70">Menunggu masuk</p>
+                            <p id="statusText" class="text-xs text-white/70">Menunggu masuk</p>
                             <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-amber"></span>
                         </div>
 
@@ -288,88 +301,158 @@
 
 <script>
     (function () {
-        const email = document.getElementById('email');
-        const pw = document.getElementById('password');
-        const nameEl = document.getElementById('guestName');
-        const avatar = document.getElementById('avatar');
-        const stamp = document.getElementById('stamp');
-        const form = document.getElementById('loginForm');
-        const btn = document.getElementById('submitBtn');
-        const label = document.getElementById('btnLabel');
-        const spin = document.getElementById('btnSpin');
-        const tilt = document.getElementById('tilt');
-        const badge = document.getElementById('badge');
+        var FEED = @json(route('notif.publik'));
 
-        // Tanggal & jam di badge
-        const dateEl = document.getElementById('guestDate');
-        const timeEl = document.getElementById('guestTime');
-        function tick() {
-            const now = new Date();
-            dateEl.textContent = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-            timeEl.textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
-        }
-        tick();
-        setInterval(tick, 15000);
+        var email = document.getElementById('email');
+        var pw = document.getElementById('password');
+        var nameEl = document.getElementById('guestName');
+        var avatar = document.getElementById('avatar');
+        var stamp = document.getElementById('stamp');
+        var form = document.getElementById('loginForm');
+        var btn = document.getElementById('submitBtn');
+        var label = document.getElementById('btnLabel');
+        var spin = document.getElementById('btnSpin');
+        var tilt = document.getElementById('tilt');
+        var badge = document.getElementById('badge');
+        var dateEl = document.getElementById('guestDate');
+        var timeEl = document.getElementById('guestTime');
+        var pill = document.getElementById('feedPill');
+        var pillText = document.getElementById('feedPillText');
+        var statusEl = document.getElementById('statusText');
 
-        // Nama di badge mengikuti isi email
+        function fmtDate(d) { return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); }
+        function fmtTime(d) { return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':'); }
+
+        // ===== Badge: dua mode =====
+        // feed   = menampilkan tamu terbaru dari server (tamu langsung / permohonan)
+        // typing = nama mengikuti email yang sedang diketik
+        var feed = { items: [], idx: 0, hari: 0, now: 0, fetched: 0 };
+        var lastNewest = null;
+        var shownName = null;
+
+        function typing() { return email.value.trim() !== ''; }
+
         function nameFromEmail(v) {
-            const local = (v || '').split('@')[0].replace(/[._\-+0-9]+/g, ' ').trim();
+            var local = (v || '').split('@')[0].replace(/[._\-+0-9]+/g, ' ').trim();
             if (!local) return 'Tamu Baru';
-            return local.split(/\s+/).slice(0, 3)
-                .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+            return local.split(/\s+/).slice(0, 3).map(function (w) {
+                return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+            }).join(' ');
         }
-        let last = nameEl.textContent;
-        function updateName() {
-            const next = nameFromEmail(email.value);
-            if (next === last) return;
-            last = next;
-            nameEl.classList.add('out');
-            setTimeout(() => {
-                nameEl.textContent = next;
-                avatar.textContent = next.charAt(0);
-                nameEl.classList.remove('out');
-            }, 150);
-        }
-        email.addEventListener('input', updateName);
-        updateName();
 
-        // Badge miring 3D mengikuti kursor + kilau holografik
-        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        function rel(sec) {
+            if (sec < 60) return 'baru saja';
+            if (sec < 3600) return Math.floor(sec / 60) + ' menit lalu';
+            return Math.floor(sec / 3600) + ' jam lalu';
+        }
+
+        function paint(name, when, pillTxt, statusTxt) {
+            if (name !== shownName) {
+                shownName = name;
+                nameEl.classList.add('out');
+                setTimeout(function () {
+                    nameEl.textContent = name;
+                    avatar.textContent = name.charAt(0).toUpperCase();
+                    nameEl.classList.remove('out');
+                }, 150);
+            }
+            dateEl.textContent = fmtDate(when);
+            timeEl.textContent = fmtTime(when);
+            statusEl.textContent = statusTxt;
+            if (pillTxt) {
+                pill.classList.remove('hidden'); pill.classList.add('inline-flex');
+                pillText.textContent = pillTxt;
+            } else {
+                pill.classList.add('hidden'); pill.classList.remove('inline-flex');
+            }
+        }
+
+        function render() {
+            if (typing()) {
+                paint(nameFromEmail(email.value), new Date(), '', 'Menunggu masuk');
+                return;
+            }
+            var it = feed.items[feed.idx];
+            if (!it) {
+                paint('Tamu Baru', new Date(), '', 'Menunggu masuk');
+                return;
+            }
+            var nowEst = feed.now + (Date.now() - feed.fetched) / 1000;
+            var jenis = it.tipe === 'langsung' ? 'Tamu langsung' : 'Permohonan';
+            paint(it.nama, new Date(it.at * 1000), jenis + ' · ' + rel(Math.max(0, nowEst - it.at)),
+                  feed.hari > 0 ? feed.hari + ' tamu hari ini' : 'Belum ada tamu hari ini');
+        }
+
+        function pop() {
+            badge.classList.remove('pop');
+            void badge.offsetWidth;
+            badge.classList.add('pop');
+            setTimeout(function () { badge.classList.remove('pop'); }, 1200);
+        }
+
+        function poll() {
+            fetch(FEED, { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (d) {
+                    if (!d || !d.items) return;
+                    var newest = d.items.length ? d.items[0].key : '';
+                    var fresh = lastNewest !== null && newest !== '' && newest !== lastNewest;
+                    lastNewest = newest;
+                    feed.items = d.items; feed.hari = d.hari; feed.now = d.now; feed.fetched = Date.now();
+                    if (fresh) { feed.idx = 0; if (!typing()) pop(); }
+                    else if (feed.idx >= feed.items.length) { feed.idx = 0; }
+                    render();
+                })
+                .catch(function () {});
+        }
+
+        email.addEventListener('input', render);
+        render();
+        poll();
+        setInterval(function () { if (!document.hidden) poll(); }, 10000);
+        setInterval(render, 15000);
+        // ganti-ganti tamu terbaru (maks. 3) kalau lebih dari satu
+        setInterval(function () {
+            if (typing() || feed.items.length < 2) return;
+            feed.idx = (feed.idx + 1) % Math.min(feed.items.length, 3);
+            render();
+        }, 7000);
+
+        // ===== Badge miring 3D mengikuti kursor + kilau =====
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (!reduce) {
             window.addEventListener('pointermove', function (e) {
-                const r = badge.getBoundingClientRect();
-                const cx = r.left + r.width / 2;
-                const cy = r.top + r.height / 2;
-                const dx = Math.max(-1, Math.min(1, (e.clientX - cx) / (window.innerWidth / 2)));
-                const dy = Math.max(-1, Math.min(1, (e.clientY - cy) / (window.innerHeight / 2)));
+                var r = badge.getBoundingClientRect();
+                if (!r.width) return;
+                var dx = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (window.innerWidth / 2)));
+                var dy = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (window.innerHeight / 2)));
                 tilt.style.transform = 'rotateY(' + (dx * 14) + 'deg) rotateX(' + (-dy * 10) + 'deg)';
                 badge.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100) + '%');
                 badge.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100) + '%');
             });
         }
 
-        // Tampilkan / sembunyikan password
-        const toggle = document.getElementById('togglePw');
-        toggle.addEventListener('click', () => {
-            const show = pw.type === 'password';
+        // ===== Tampilkan / sembunyikan password =====
+        var toggle = document.getElementById('togglePw');
+        toggle.addEventListener('click', function () {
+            var show = pw.type === 'password';
             pw.type = show ? 'text' : 'password';
             document.getElementById('eyeOn').classList.toggle('hidden', show);
             document.getElementById('eyeOff').classList.toggle('hidden', !show);
             toggle.setAttribute('aria-label', show ? 'Sembunyikan password' : 'Tampilkan password');
         });
 
-        // Submit: stempel HADIR dulu, lalu kirim form
-        let sent = false;
+        // ===== Submit: stempel HADIR dulu, lalu kirim form =====
+        var sent = false;
         form.addEventListener('submit', function (e) {
-            if (sent) return;
-            if (!form.checkValidity()) return;
+            if (sent || !form.checkValidity()) return;
             e.preventDefault();
             sent = true;
             btn.disabled = true;
             label.textContent = 'Mencatat kehadiran...';
             spin.classList.remove('hidden');
             stamp.classList.add('on');
-            setTimeout(() => form.submit(), 700);
+            setTimeout(function () { form.submit(); }, 700);
         });
     })();
 </script>

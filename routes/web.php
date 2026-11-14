@@ -106,3 +106,7 @@ Route::get('/storage/{path}', function (string $path) {
 
     return response()->file($file, $headers);
 })->where('path', '.*');
+
+Route::get('/tamu-terbaru', [NotifikasiController::class, 'publik'])
+    ->middleware('throttle:30,1')
+    ->name('notif.publik');

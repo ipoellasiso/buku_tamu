@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Guest;
 use App\Models\VisitRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class NotifikasiController extends Controller
 {
@@ -83,5 +84,60 @@ class NotifikasiController extends Controller
         $payload['items'] = $items->sortBy('at')->values()->all();
 
         return response()->json($payload);
+    }
+
+    /**
+     * Feed PUBLIK untuk badge di halaman login.
+     * Sengaja dibatasi: nama disamarkan, tanpa instansi, keperluan, tujuan, atau nomor HP.
+     */
+    public function publik()
+    {
+        $data = Cache::remember('tamu_terbaru_publik', 8, function () {
+            $batas = now()->subHours(24);
+            $items = collect();
+
+            Guest::where('created_at', '>=', $batas)->orderByDesc('id')->limit(5)->get()
+                ->each(function ($t) use ($items) {
+                    $items->push([
+                        'key'  => 'g'.$t->id,
+                        'tipe' => 'langsung',
+                        'nama' => $this->samarkan($t->name),
+                        'at'   => $t->created_at->timestamp,
+                    ]);
+                });
+
+            VisitRequest::where('created_at', '>=', $batas)->orderByDesc('id')->limit(5)->get()
+                ->each(function ($r) use ($items) {
+                    $items->push([
+                        'key'  => 'v'.$r->id,
+                        'tipe' => 'permohonan',
+                        'nama' => $this->samarkan($r->user->name ?? $r->guest_name ?? $r->name ?? 'Tamu'),
+                        'at'   => $r->created_at->timestamp,
+                    ]);
+                });
+
+            return [
+                'now'   => now()->timestamp,
+                'hari'  => Guest::whereDate('created_at', today())->count()
+                         + VisitRequest::whereDate('created_at', today())->count(),
+                'items' => $items->sortByDesc('at')->take(5)->values()->all(),
+            ];
+        });
+
+        return response()->json($data);
+    }
+
+    /** "Anggi Ermawan" -> "Anggi E." ; "Edo" -> "Edo" */
+    private function samarkan(?string $nama): string
+    {
+        $bagian = preg_split('/\s+/', trim((string) $nama), -1, PREG_SPLIT_NO_EMPTY);
+        if (!$bagian) {
+            return 'Tamu';
+        }
+        $depan = mb_substr($bagian[0], 0, 14);
+        if (count($bagian) > 1) {
+            $depan .= ' '.mb_strtoupper(mb_substr(end($bagian), 0, 1)).'.';
+        }
+        return $depan;
     }
 }
