@@ -88,3 +88,18 @@ Route::get('/mulai', function () {
 Route::get('/tamu-langsung',  [WalkinController::class, 'create'])->name('walkin.create');
 Route::post('/tamu-langsung', [WalkinController::class, 'store'])->middleware('throttle:6,1')->name('walkin.store');
 Route::get('/tamu-langsung/status/{token}', [WalkinController::class, 'status'])->name('walkin.status');
+
+Route::get('/storage/{path}', function (string $path) {
+    $base = realpath(storage_path('app/public'));
+    $file = realpath($base.'/'.$path);
+
+    abort_unless($file && str_starts_with($file, $base) && is_file($file), 404);
+
+    $headers = ['Cache-Control' => 'public, max-age=604800'];
+
+    if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'svg') {
+        $headers['Content-Type'] = 'image/svg+xml';
+    }
+
+    return response()->file($file, $headers);
+})->where('path', '.*');
