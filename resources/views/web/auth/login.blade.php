@@ -327,7 +327,7 @@
         // feed   = menampilkan tamu terbaru dari server (tamu langsung / permohonan)
         // typing = nama mengikuti email yang sedang diketik
         var feed = { items: [], idx: 0, hari: 0, now: 0, fetched: 0 };
-        var lastNewest = null;
+        var seenKeys = null;
         var shownName = null;
 
         var userTyped = false;
@@ -396,9 +396,12 @@
                 .then(function (r) { return r.ok ? r.json() : null; })
                 .then(function (d) {
                     if (!d || !d.items) return;
-                    var newest = d.items.length ? d.items[0].key : '';
-                    var fresh = lastNewest !== null && newest !== '' && newest !== lastNewest;
-                    lastNewest = newest;
+                    var fresh = false;
+                    if (seenKeys !== null) {
+                        d.items.forEach(function (i) { if (!seenKeys[i.key]) fresh = true; });
+                    }
+                    seenKeys = seenKeys || {};
+                    d.items.forEach(function (i) { seenKeys[i.key] = 1; });
                     feed.items = d.items; feed.hari = d.hari; feed.now = d.now; feed.fetched = Date.now();
                     if (fresh) { feed.idx = 0; if (!typing()) pop(); }
                     else if (feed.idx >= feed.items.length) { feed.idx = 0; }

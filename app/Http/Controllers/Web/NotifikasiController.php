@@ -93,10 +93,12 @@ class NotifikasiController extends Controller
     public function publik()
     {
         $data = Cache::remember('tamu_terbaru_publik', 8, function () {
-            $batas = now()->subHours(24);
-            $items = collect();
+            $batas   = now()->subHours(24);
+            $items   = collect();
+            // hanya tamu yang masih aktif (menunggu / sedang di dalam)
+            $selesai = ['completed', 'selesai', 'rejected', 'ditolak', 'cancelled', 'canceled'];
 
-            Guest::where('created_at', '>=', $batas)->orderByDesc('id')->limit(5)->get()
+            Guest::whereNotIn('status', $selesai)->where('created_at', '>=', $batas)->orderByDesc('id')->limit(5)->get()
                 ->each(function ($t) use ($items) {
                     $items->push([
                         'key'  => 'g'.$t->id,
@@ -106,7 +108,7 @@ class NotifikasiController extends Controller
                     ]);
                 });
 
-            VisitRequest::where('created_at', '>=', $batas)->orderByDesc('id')->limit(5)->get()
+            VisitRequest::whereNotIn('status', $selesai)->where('created_at', '>=', $batas)->orderByDesc('id')->limit(5)->get()
                 ->each(function ($r) use ($items) {
                     $items->push([
                         'key'  => 'v'.$r->id,
