@@ -202,7 +202,7 @@
 
                         <div id="feedPill" class="mb-3 hidden items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
                             <span class="h-2 w-2 animate-pulse rounded-full bg-amber"></span>
-                            <span id="feedPillText">Tamu terbaru</span>
+                            <span id="feedPillText">Tamu terbaruasas</span>
                         </div>
 
                         <div class="flex items-center gap-4">
