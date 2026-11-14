@@ -202,7 +202,7 @@
 
                         <div id="feedPill" class="mb-3 hidden items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
                             <span class="h-2 w-2 animate-pulse rounded-full bg-amber"></span>
-                            <span id="feedPillText">Tamu terbaruasas</span>
+                            <span id="feedPillText">Tamu terbaru</span>
                         </div>
 
                         <div class="flex items-center gap-4">
@@ -251,7 +251,7 @@
             <span class="font-display text-base font-semibold text-white/80">{{ $set->nama_pendek }}</span>
         </div>
 
-        <h1 class="font-display text-4xl font-extrabold tracking-tight">Selamat datangsadsada</h1>
+        <h1 class="font-display text-4xl font-extrabold tracking-tight">Selamat datang</h1>
         <p class="mt-2 text-white/60">Masuk ke {{ $set->nama_aplikasi }} dengan akun Anda.</p>
 
         @if($errors->any())
@@ -330,7 +330,8 @@
         var lastNewest = null;
         var shownName = null;
 
-        function typing() { return email.value.trim() !== ''; }
+        var userTyped = false;
+        function typing() { return userTyped && email.value.trim() !== ''; }
 
         function nameFromEmail(v) {
             var local = (v || '').split('@')[0].replace(/[._\-+0-9]+/g, ' ').trim();
@@ -406,7 +407,12 @@
                 .catch(function () {});
         }
 
-        email.addEventListener('input', render);
+        email.addEventListener('keydown', function () { userTyped = true; });
+        email.addEventListener('paste', function () { userTyped = true; });
+        email.addEventListener('input', function () {
+            if (email.value.trim() === '') userTyped = false;
+            render();
+        });
         render();
         poll();
         setInterval(function () { if (!document.hidden) poll(); }, 10000);
@@ -448,6 +454,8 @@
             if (sent || !form.checkValidity()) return;
             e.preventDefault();
             sent = true;
+            userTyped = true;
+            render();
             btn.disabled = true;
             label.textContent = 'Mencatat kehadiran...';
             spin.classList.remove('hidden');
