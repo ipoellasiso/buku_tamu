@@ -109,12 +109,32 @@ class WalkinController extends Controller
         return view('web.walkin.index', compact('tamu', 'perPage', 'menunggu'));
     }
 
-    public function masuk($id)
+    // public function masuk($id)
+    // {
+    //     $g = Guest::findOrFail($id);
+    //     if ($g->status === 'pending') {
+    //         $g->update(['status' => 'confirmed', 'check_in_at' => now()]);
+    //     }
+    //     return back()->with('success', "{$g->name} dicatat masuk.");
+    // }
+
+    public function masuk(Request $request, $id)
     {
         $g = Guest::findOrFail($id);
+
         if ($g->status === 'pending') {
             $g->update(['status' => 'confirmed', 'check_in_at' => now()]);
         }
+
+        // Kalau dipanggil via AJAX, balas JSON berisi teks pengumuman
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok'   => true,
+                'nama' => $g->name,
+                'teks' => \App\Support\JenisKeperluan::kalimat($g->fresh()),
+            ]);
+        }
+
         return back()->with('success', "{$g->name} dicatat masuk.");
     }
 

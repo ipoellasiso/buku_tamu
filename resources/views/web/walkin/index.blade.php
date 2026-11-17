@@ -102,10 +102,12 @@
                     <td class="px-4 py-3">
                         <div class="flex items-center justify-center gap-2">
                             @if($g->status === 'pending')
-                                <form action="{{ route('walkin.masuk', $g->id) }}" method="POST">
-                                    @csrf
-                                    <button class="btn-green !px-3 !py-1.5 !text-xs">Masuk</button>
-                                </form>
+                                <button type="button"
+                                        class="btn-green !px-3 !py-1.5 !text-xs js-masuk"
+                                        data-id="{{ $g->id }}"
+                                        data-url="{{ route('walkin.masuk', $g->id) }}"
+                                        data-csrf="{{ csrf_token() }}">Masuk
+                                </button>
                                 <form action="{{ route('walkin.destroy', $g->id) }}" method="POST"
                                       onsubmit="return confirm('Hapus data tamu ini?')">
                                     @csrf @method('DELETE')
@@ -138,5 +140,82 @@
         const a = document.activeElement;
         if (!a || a === document.body) location.reload();
     }, 30000);
+</script>
+
+<audio id="ttsPlayer" preload="auto"></audio>
+
+<script>
+(function () {
+    var player = document.getElementById('ttsPlayer');
+    var enabled = false;
+
+    // --- unlock audio sekali saat halaman dibuka (klik di mana saja) ---
+    // Ini supaya audio bisa diputar nanti tanpa gesture tambahan
+    function unlock() {
+        // file silent 0.1 detik
+        player.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiA=';
+        player.play().then(function () {
+            player.pause();
+            player.currentTime = 0;
+            enabled = true;
+            player.removeAttribute('src');
+        }).catch(function () { /* abaikan, akan dicoba lagi saat klik Masuk */ });
+        document.removeEventListener('pointerdown', unlock);
+    }
+    document.addEventListener('pointerdown', unlock, { once: true });
+
+    // --- helper: ucapkan teks via speechSynthesis (fallback) ---
+    function speakFallback(teks) {
+        if (!('speechSynthesis' in window)) return;
+        var u = new SpeechSynthesisUtterance(teks);
+        u.lang = 'id-ID';
+        u.rate = 0.9;
+        speechSynthesis.speak(u);
+    }
+
+    // --- helper: bunyikan chime + teks ---
+    function announce(teks) {
+        // coba lewat speechSynthesis dulu (paling gampang, tidak butuh file)
+        speakFallback(teks);
+    }
+
+    // --- handler tombol Masuk ---
+    document.querySelectorAll('.js-masuk').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            btn.disabled = true;
+            btn.textContent = '...';
+
+            fetch(btn.dataset.url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': btn.dataset.csrf,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.ok && d.teks) {
+                    // klik ini adalah gesture → audio boleh bunyi sekarang
+                    announce(d.teks);
+                }
+                // segarkan baris tabel setelah jeda singkat
+                setTimeout(function () { location.reload(); }, 500);
+            })
+            .catch(function () {
+                // kalau AJAX gagal, fallback submit form biasa
+                var f = document.createElement('form');
+                f.method = 'POST';
+                f.action = btn.dataset.url;
+                var c = document.createElement('input');
+                c.type = 'hidden'; c.name = '_token'; c.value = btn.dataset.csrf;
+                f.appendChild(c);
+                document.body.appendChild(f);
+                f.submit();
+            });
+        });
+    });
+})();
 </script>
 @endsection
