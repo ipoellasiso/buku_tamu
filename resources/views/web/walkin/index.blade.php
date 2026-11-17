@@ -58,6 +58,17 @@
         data
     </form>
 
+    {{-- Pengaturan ulang pengumuman --}}
+    <div class="px-5 pt-3 flex items-center gap-2 text-sm text-slate-500">
+        Ulangi pengumuman:
+        <select id="repWalkin" class="inp !w-auto !py-1">
+            <option value="1">1 kali</option>
+            <option value="2" selected>2 kali</option>
+            <option value="3">3 kali</option>
+            <option value="4">4 kali</option>
+        </select>
+    </div>
+
     <div class="overflow-x-auto p-5">
         <table class="text-sm border border-slate-200 rounded-lg">
             <thead>
@@ -134,69 +145,151 @@
     <div class="px-5 pb-5">{{ $tamu->links() }}</div>
 </div>
 
-{{-- segarkan otomatis tiap 30 detik, selama tidak sedang mengetik --}}
-<script>
-    setTimeout(function () {
-        const a = document.activeElement;
-        const speaking = window.speechSynthesis && window.speechSynthesis.speaking;
-        if ((!a || a === document.body) && !speaking) location.reload();
-    }, 30000);
-</script>
-
 <audio id="ttsPlayer" preload="auto"></audio>
 
 <script>
 (function () {
-    var player = document.getElementById('ttsPlayer');
+    // ============================================================
+    // 1. UNLOCK AUDIO (sekali saat interaksi pertama)
+    // ============================================================
+    var player   = document.getElementById('ttsPlayer');
     var unlocked = false;
+    var ctx      = null;   // AudioContext untuk chime
 
     function unlockAll() {
         if (unlocked) return;
+
+        // unlock <audio>
         try {
             player.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiA=';
             player.play().then(function () {
-                player.pause(); player.currentTime = 0;
+                player.pause();
+                player.currentTime = 0;
                 player.removeAttribute('src');
             }).catch(function () {});
         } catch (e) {}
+
+        // unlock AudioContext
+        try {
+            var AC = window.AudioContext || window.webkitAudioContext;
+            ctx = ctx || new AC();
+            if (ctx.state === 'suspended') ctx.resume();
+        } catch (e) {}
+
         unlocked = true;
         console.log('[TTS] unlocked');
     }
     document.addEventListener('pointerdown', unlockAll, { once: true });
-    document.addEventListener('keydown', unlockAll, { once: true });
+    document.addEventListener('keydown',    unlockAll, { once: true });
 
-    function speak(teks, done) {
-        console.log('[TTS] speak:', teks);
-        if (!('speechSynthesis' in window)) { if (done) done(); return; }
-        speechSynthesis.cancel();
+    // ============================================================
+    // 2. CHIME "DING-DONG"
+    // ============================================================
+    function chime(cb) {
+        try {
+            var AC = window.AudioContext || window.webkitAudioContext;
+            ctx = ctx || new AC();
+            if (ctx.state === 'suspended') ctx.resume();
 
-        var u = new SpeechSynthesisUtterance(teks);
-        u.lang = 'id-ID';
-        u.rate = 0.9;
-        u.volume = 1;
-
-        var finished = false;
-        function fin() {
-            if (finished) return;
-            finished = true;
-            console.log('[TTS] selesai');
-            if (done) done();
-        }
-        u.onend = fin;
-        u.onerror = function (e) { console.warn('[TTS] error:', e.error); fin(); };
-
-        setTimeout(function () {
-            speechSynthesis.speak(u);
-            console.log('[TTS] mulai bicara');
-            setTimeout(fin, 30000); // watchdog
-        }, 100);
+            [659, 523].forEach(function (f, i) {
+                var o = ctx.createOscillator(), g = ctx.createGain();
+                var t = ctx.currentTime + i * 0.45;
+                o.type = 'sine';
+                o.frequency.value = f;
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.25, t + 0.03);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+                o.connect(g); g.connect(ctx.destination);
+                o.start(t); o.stop(t + 0.65);
+            });
+            setTimeout(cb, 1100);
+        } catch (e) { cb(); }
     }
 
+    // ============================================================
+    // 3. SPEAK — dengan pengulangan & watchdog
+    // ============================================================
+    function speak(teks, done, ulang) {
+        ulang = ulang || 1;
+        console.log('[TTS] speak x' + ulang + ':', teks);
+
+        if (!('speechSynthesis' in window)) { if (done) done(); return; }
+
+        var n = 0;
+
+        function once(cb) {
+            // jeda 100ms setelah cancel untuk hindari bug Chrome
+            speechSynthesis.cancel();
+
+            var u = new SpeechSynthesisUtterance(teks);
+            u.lang   = 'id-ID';
+            u.rate   = 0.9;
+            u.volume = 1;
+
+            var finished = false;
+            function fin() {
+                if (finished) return;
+                finished = true;
+                console.log('[TTS] putaran ' + (n + 1) + ' selesai');
+                cb();
+            }
+            u.onend   = fin;
+            u.onerror = function (e) { console.warn('[TTS] error:', e.error); fin(); };
+
+            setTimeout(function () {
+                speechSynthesis.speak(u);
+                console.log('[TTS] mulai putaran ' + (n + 1));
+                setTimeout(fin, 30000); // watchdog 30 detik
+            }, 100);
+        }
+
+        function loop() {
+            if (n >= ulang) {
+                console.log('[TTS] semua putaran selesai');
+                if (done) done();
+                return;
+            }
+            chime(function () {
+                once(function () {
+                    n++;
+                    if (n < ulang) {
+                        setTimeout(loop, 1500);   // jeda 1.5 detik antar putaran
+                    } else {
+                        loop();
+                    }
+                });
+            });
+        }
+        loop();
+    }
+
+    // ============================================================
+    // 4. DROPDOWN "ULANGI PENGUMUMAN"
+    // ============================================================
+    var repSel = document.getElementById('repWalkin');
+    var savedRep = localStorage.getItem('png_rep_walkin');
+    if (savedRep && repSel) repSel.value = savedRep;
+    if (repSel) {
+        repSel.addEventListener('change', function () {
+            localStorage.setItem('png_rep_walkin', repSel.value);
+        });
+    }
+    function getRepeat() {
+        var v = repSel ? parseInt(repSel.value, 10) : 2;
+        return (v >= 1 && v <= 5) ? v : 2;
+    }
+
+    // ============================================================
+    // 5. HANDLER TOMBOL "MASUK"
+    // ============================================================
     document.querySelectorAll('.js-masuk').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            unlockAll();
+            unlockAll();   // sinkron di handler klik
+
             btn.disabled = true;
+            var original = btn.textContent;
             btn.textContent = '...';
+
             console.log('[Masuk] POST', btn.dataset.url);
 
             fetch(btn.dataset.url, {
@@ -216,26 +309,41 @@
             .then(function (d) {
                 console.log('[Masuk] response', d);
                 if (d && d.ok && d.teks) {
+                    // Reload HANYA setelah semua putaran selesai
                     speak(d.teks, function () {
-                        location.reload();   // ← reload SETELAH suara selesai
-                    });
+                        location.reload();
+                    }, getRepeat());
                 } else {
+                    btn.disabled = false;
+                    btn.textContent = original;
                     setTimeout(function () { location.reload(); }, 500);
                 }
             })
             .catch(function (err) {
                 console.error('[Masuk] gagal:', err);
+                // fallback: submit form biasa
                 var f = document.createElement('form');
                 f.method = 'POST';
                 f.action = btn.dataset.url;
                 var c = document.createElement('input');
-                c.type = 'hidden'; c.name = '_token'; c.value = btn.dataset.csrf;
+                c.type = 'hidden';
+                c.name = '_token';
+                c.value = btn.dataset.csrf;
                 f.appendChild(c);
                 document.body.appendChild(f);
                 f.submit();
             });
         });
     });
+
+    // ============================================================
+    // 6. AUTO-RELOAD 30 DETIK — tidak memotong suara
+    // ============================================================
+    setTimeout(function () {
+        var a = document.activeElement;
+        var speaking = window.speechSynthesis && window.speechSynthesis.speaking;
+        if ((!a || a === document.body) && !speaking) location.reload();
+    }, 30000);
 })();
 </script>
 @endsection
