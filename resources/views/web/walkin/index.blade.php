@@ -144,46 +144,73 @@
 
 <audio id="ttsPlayer" preload="auto"></audio>
 
+<audio id="ttsPlayer" preload="auto"></audio>
+
 <script>
 (function () {
     var player = document.getElementById('ttsPlayer');
-    var enabled = false;
+    var unlocked = false;
 
-    // --- unlock audio sekali saat halaman dibuka (klik di mana saja) ---
-    // Ini supaya audio bisa diputar nanti tanpa gesture tambahan
-    function unlock() {
-        // file silent 0.1 detik
-        player.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiA=';
-        player.play().then(function () {
-            player.pause();
-            player.currentTime = 0;
-            enabled = true;
-            player.removeAttribute('src');
-        }).catch(function () { /* abaikan, akan dicoba lagi saat klik Masuk */ });
-        document.removeEventListener('pointerdown', unlock);
+    // Unlock audio context + speechSynthesis SEKALI saat klik pertama di halaman.
+    // Setelah unlocked=true, speak() boleh dipanggil kapan saja (termasuk di .then()).
+    function unlockAll() {
+        if (unlocked) return;
+        // unlock <audio>
+        try {
+            player.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiA=';
+            player.play().then(function () {
+                player.pause(); player.currentTime = 0;
+                player.removeAttribute('src');
+            }).catch(function () {});
+        } catch (e) {}
+        // unlock speechSynthesis — ucapkan spasi, volume 0
+        try {
+            var u = new SpeechSynthesisUtterance(' ');
+            u.volume = 0;
+            speechSynthesis.speak(u);
+        } catch (e) {}
+        unlocked = true;
+        console.log('[TTS] audio unlocked');
     }
-    document.addEventListener('pointerdown', unlock, { once: true });
+    document.addEventListener('pointerdown', unlockAll, { once: true });
+    document.addEventListener('keydown', unlockAll, { once: true });
 
-    // --- helper: ucapkan teks via speechSynthesis (fallback) ---
-    function speakFallback(teks) {
-        if (!('speechSynthesis' in window)) return;
+    function speak(teks) {
+        console.log('[TTS] speak:', teks);
+        if (!('speechSynthesis' in window)) {
+            alert('Browser tidak mendukung suara.');
+            return;
+        }
+        // batalkan yang sedang berjalan supaya tidak numpuk
+        speechSynthesis.cancel();
         var u = new SpeechSynthesisUtterance(teks);
         u.lang = 'id-ID';
         u.rate = 0.9;
+        u.volume = 1;
+        u.onstart = function () { console.log('[TTS] mulai bicara'); };
+        u.onend   = function () { console.log('[TTS] selesai'); };
+        u.onerror = function (e) { console.warn('[TTS] error:', e.error); };
         speechSynthesis.speak(u);
     }
 
-    // --- helper: bunyikan chime + teks ---
-    function announce(teks) {
-        // coba lewat speechSynthesis dulu (paling gampang, tidak butuh file)
-        speakFallback(teks);
-    }
-
-    // --- handler tombol Masuk ---
     document.querySelectorAll('.js-masuk').forEach(function (btn) {
         btn.addEventListener('click', function () {
+            // 1) Unlock SINKRON di dalam handler klik (gesture masih valid)
+            unlockAll();
+
+            // 2) Unlock speechSynthesis dengan utterance kosong
+            //    Ini memastikan speak() nanti diizinkan walau dipanggil di .then()
+            try {
+                var warm = new SpeechSynthesisUtterance(' ');
+                warm.volume = 0;
+                speechSynthesis.speak(warm);
+            } catch (e) {}
+
             btn.disabled = true;
+            var original = btn.textContent;
             btn.textContent = '...';
+
+            console.log('[Masuk] POST', btn.dataset.url);
 
             fetch(btn.dataset.url, {
                 method: 'POST',
@@ -194,17 +221,23 @@
                 },
                 credentials: 'same-origin',
             })
-            .then(function (r) { return r.json(); })
-            .then(function (d) {
-                if (d.ok && d.teks) {
-                    // klik ini adalah gesture → audio boleh bunyi sekarang
-                    announce(d.teks);
-                }
-                // segarkan baris tabel setelah jeda singkat
-                setTimeout(function () { location.reload(); }, 500);
+            .then(function (r) {
+                console.log('[Masuk] status', r.status, r.headers.get('content-type'));
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
             })
-            .catch(function () {
-                // kalau AJAX gagal, fallback submit form biasa
+            .then(function (d) {
+                console.log('[Masuk] response', d);
+                if (d && d.ok && d.teks) {
+                    speak(d.teks);
+                } else {
+                    console.warn('[Masuk] response tidak berisi teks:', d);
+                }
+                setTimeout(function () { location.reload(); }, 1500);
+            })
+            .catch(function (err) {
+                console.error('[Masuk] gagal:', err);
+                // fallback: submit form biasa
                 var f = document.createElement('form');
                 f.method = 'POST';
                 f.action = btn.dataset.url;
