@@ -89,7 +89,10 @@
                         </div>
                     </td>
                     <td class="px-4 py-3">{{ $g->host ?? '-' }}</td>
-                    <td class="px-4 py-3">{{ \Illuminate\Support\Str::limit($g->purpose, 32) }}</td>
+                    <td class="px-4 py-3">
+                        {{ \Illuminate\Support\Str::limit($g->purpose, 32) }}
+                        <p class="text-xs text-slate-400">{{ \App\Support\JenisKeperluan::label($g->purpose_type) }}</p>
+                    </td>
                     <td class="px-4 py-3 text-xs text-slate-500">
                         <p>Datang: {{ $g->created_at->format('d/m/Y H:i') }}</p>
                         @if($g->check_in_at)<p>Masuk: {{ $g->check_in_at->format('H:i') }}</p>@endif

@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Guest;
+use App\Support\JenisKeperluan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 
 class PengumumanController extends Controller
 {
@@ -43,35 +43,15 @@ class PengumumanController extends Controller
             ->map(fn ($t) => [
                 'id'       => $t->id,
                 'nama'     => $t->name,
-                'instansi' => $t->institution,
+                'jenis'    => JenisKeperluan::label($t->purpose_type),
                 'tujuan'   => $t->host,
-                'jabatan'  => $t->employee->position ?? null,
                 'at'       => $t->check_in_at->timestamp,
                 'jam'      => $t->check_in_at->format('H:i'),
-                'teks'     => $this->kalimat($t),
+                // redaksi pengumuman diatur di App\Support\JenisKeperluan
+                'teks'     => JenisKeperluan::kalimat($t),
             ])
             ->values();
 
         return response()->json(['now' => $now->timestamp, 'items' => $items]);
-    }
-
-    /** Kalimat yang diucapkan. Ubah di sini kalau mau mengganti redaksinya. */
-    private function kalimat(Guest $t): string
-    {
-        $nama = trim((string) $t->name);
-        $asal = $t->institution ? ', dari '.trim($t->institution) : '';
-        $host = $t->host;
-
-        if ($host) {
-            $jabatan = $t->employee->position ?? null;
-            $tujuan  = 'Bapak atau Ibu '.$host.($jabatan ? ', '.$jabatan : '');
-
-            return "Perhatian. Tamu atas nama {$nama}{$asal}, ingin bertemu {$tujuan}. "
-                 . 'Mohon segera menemui tamu di resepsionis Oke Gaisssssss Mantullllll.';
-        }
-
-        $perlu = Str::limit((string) $t->purpose, 80);
-
-        return "Perhatian. Tamu atas nama {$nama}{$asal}, telah tiba di resepsionis. Keperluan: {$perlu}.";
     }
 }

@@ -76,8 +76,7 @@
 
 <script>
     (function () {
-        // var DATA = @json(route('pengumuman.data'));
-        var DATA = "{{ route('pengumuman.data') }}";
+        var DATA = @json(route('pengumuman.data'));
         var K_SINCE = 'png_since', K_DONE = 'png_done', K_SET = 'png_set';
 
         function $(id) { return document.getElementById(id); }
@@ -205,7 +204,7 @@
 
             var to = document.createElement('p');
             to.className = 'text-slate-500';
-            to.textContent = it.tujuan ? 'Menemui ' + it.tujuan : 'Tujuan ditentukan resepsionis';
+            to.textContent = (it.jenis ? it.jenis + ' · ' : '') + (it.tujuan ? 'Menemui ' + it.tujuan : 'Tujuan ditentukan resepsionis');
 
             var again = document.createElement('button');
             again.type = 'button';

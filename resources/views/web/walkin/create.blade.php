@@ -70,16 +70,42 @@
                 </div>
             </div>
 
+            @php
+                $ikon = [
+                    'berkas'     => 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5ZM14 3v5h5M9 13h6M9 17h6',
+                    'temu'       => 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+                    'konsultasi' => 'M21 12a8 8 0 0 1-11.5 7.2L3 21l1.8-6A8 8 0 1 1 21 12Z',
+                    'lainnya'    => 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01',
+                ];
+            @endphp
+
             <div class="field">
-                <label for="purpose" class="mb-1.5 block text-sm font-medium text-white/70 transition-colors">Keperluan *</label>
+                <span class="mb-2 block text-sm font-medium text-white/70">Jenis keperluan *</span>
+                <div class="grid grid-cols-2 gap-3">
+                    @foreach(\App\Support\JenisKeperluan::DAFTAR as $kode => $j)
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="purpose_type" value="{{ $kode }}" data-info="{{ $j['info'] }}" required
+                                   class="peer sr-only" @checked(old('purpose_type') === $kode)>
+                            <span class="flex h-full flex-col gap-2 rounded-2xl border border-white/15 bg-white/5 p-3 transition hover:bg-white/10 peer-checked:border-amber peer-checked:bg-amber/10 peer-checked:[&_svg]:text-amber peer-focus-visible:ring-4 peer-focus-visible:ring-brand/40">
+                                <svg class="h-6 w-6 text-white/60 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $ikon[$kode] ?? $ikon['lainnya'] }}"/></svg>
+                                <span class="text-sm font-semibold leading-tight">{{ $j['label'] }}</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                <p id="jenisInfo" class="mt-2 min-h-[1.25rem] text-xs text-amber/90"></p>
+            </div>
+
+            <div class="field">
+                <label for="purpose" class="mb-1.5 block text-sm font-medium text-white/70 transition-colors">Keterangan *</label>
                 <div class="relative">
                     <svg class="ico top h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.5 7.2L3 21l1.8-6A8 8 0 1 1 21 12Z"/></svg>
-                    <textarea id="purpose" class="inp resize-none" name="purpose" rows="2" required placeholder="Tujuan kunjungan">{{ old('purpose') }}</textarea>
+                    <textarea id="purpose" class="inp resize-none" name="purpose" rows="2" required placeholder="Jelaskan singkat keperluan Anda">{{ old('purpose') }}</textarea>
                 </div>
             </div>
 
             <div class="field">
-                <label for="employee_id" class="mb-1.5 block text-sm font-medium text-white/70 transition-colors">Yang dituju</label>
+                <label for="employee_id" class="mb-1.5 block text-sm font-medium text-white/70 transition-colors">Yang dituju <span id="empStar" class="hidden text-amber">*</span></label>
                 <div class="relative">
                     <svg class="ico h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="11" r="2.5"/><path d="M5.5 17a4 4 0 0 1 7 0M15 9h3M15 13h3"/></svg>
                     <select id="employee_id" class="inp" name="employee_id">
@@ -111,3 +137,25 @@
     </main>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        var radios = document.querySelectorAll('input[name="purpose_type"]');
+        var emp  = document.getElementById('employee_id');
+        var star = document.getElementById('empStar');
+        var info = document.getElementById('jenisInfo');
+        var perluPegawai = ['temu', 'konsultasi'];
+
+        function sync() {
+            var r = document.querySelector('input[name="purpose_type"]:checked');
+            var butuh = r && perluPegawai.indexOf(r.value) > -1;
+            emp.required = !!butuh;
+            star.classList.toggle('hidden', !butuh);
+            info.textContent = r ? r.dataset.info : '';
+        }
+        radios.forEach(function (r) { r.addEventListener('change', sync); });
+        sync();
+    })();
+</script>
+@endpush

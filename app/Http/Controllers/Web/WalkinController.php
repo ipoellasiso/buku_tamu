@@ -35,7 +35,9 @@ class WalkinController extends Controller
             'institution' => 'nullable|string|max:120',
             'phone'       => 'nullable|string|max:20',
             'purpose'     => 'required|string|max:255',
-            'employee_id' => 'nullable|exists:users,id',
+            'purpose_type' => ['required', \Illuminate\Validation\Rule::in(\App\Support\JenisKeperluan::kode())],
+            'employee_id'  => 'required_if:purpose_type,temu,konsultasi|nullable',
+            // 'employee_id' => 'nullable|exists:users,id',
             'photo'       => 'nullable|image|max:4096',
         ]);
 

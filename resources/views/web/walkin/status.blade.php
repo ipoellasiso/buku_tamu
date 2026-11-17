@@ -49,6 +49,7 @@
                 ['Nama',        $guest->name],
                 ['Instansi',    $guest->institution ?? '-'],
                 ['Keperluan',   $guest->purpose],
+                ['Jenis',       \App\Support\JenisKeperluan::label($guest->purpose_type)],
                 ['Yang dituju', $guest->host ?? 'Ditentukan resepsionis'],
                 ['Dikirim',     $guest->created_at->format('d/m/Y H:i')],
             ] as [$l, $v])

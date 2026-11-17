@@ -11,7 +11,7 @@ class Guest extends Model
         'name', 'institution', 'address', 'phone', 'purpose',
         'host', 'photo_path', 'signature_path', 'qr_code_path',
         'qr_token', 'check_in_at', 'check_out_at',
-        'status', 'user_id', // ← tambahkan
+        'status', 'user_id', 'purpose_type' // ← tambahkan
     ];
 
     protected $casts = [
