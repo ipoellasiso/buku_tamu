@@ -14,6 +14,7 @@ use App\Http\Controllers\Web\QrSitusController;
 use App\Http\Controllers\Web\WalkinController;
 use App\Http\Controllers\Web\PengaturanController;
 use App\Http\Controllers\Web\NotifikasiController;
+use App\Http\Controllers\Web\PengumumanController;
 
 Route::get('/', fn () => redirect()->route('login'));
 
@@ -110,3 +111,6 @@ Route::get('/storage/{path}', function (string $path) {
 Route::get('/tamu-terbaru', [NotifikasiController::class, 'publik'])
     ->middleware('throttle:30,1')
     ->name('notif.publik');
+
+Route::get('/pengumuman',      [PengumumanController::class, 'index'])->name('pengumuman.index');
+Route::get('/pengumuman/data', [PengumumanController::class, 'data'])->name('pengumuman.data');
