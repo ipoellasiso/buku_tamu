@@ -48,6 +48,7 @@ class WalkinController extends Controller
             'institution' => $data['institution'] ?? null,
             'phone'       => $data['phone'] ?? null,
             'purpose'     => $data['purpose'],
+            'purpose_type' => $data['purpose_type'],   // ← tambahkan ini
             'host'        => $pegawai?->name,
             'qr_token'    => (string) Str::uuid(),
             'status'      => 'pending',
