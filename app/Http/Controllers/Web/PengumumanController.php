@@ -67,7 +67,7 @@ class PengumumanController extends Controller
             $tujuan  = 'Bapak atau Ibu '.$host.($jabatan ? ', '.$jabatan : '');
 
             return "Perhatian. Tamu atas nama {$nama}{$asal}, ingin bertemu {$tujuan}. "
-                 . 'Mohon segera menemui tamu di resepsionis.';
+                 . 'Mohon segera menemui tamu di resepsionis Oke Gasisss.';
         }
 
         $perlu = Str::limit((string) $t->purpose, 80);
